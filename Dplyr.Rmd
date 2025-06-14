@@ -1,0 +1,700 @@
+---
+title: "Complete Guide to dplyr Functions"
+author: "Syed Toushik Hossain"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: false
+      smooth_scroll: true
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(dplyr)
+library(knitr)
+```
+
+# Introduction to dplyr
+
+The dplyr package is one of the most essential tools in the R ecosystem for data manipulation. Think of it as your Swiss Army knife for working with data frames and tibbles. Each function in dplyr serves a specific purpose, much like different tools serve different functions in a workshop. Let's explore each function with practical examples using a sample dataset.
+
+```{r create-sample-data}
+# Creating a sample dataset for demonstration
+# This represents sales data for a fictional company
+sales_data <- data.frame(
+  employee_id = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5),
+  employee_name = c("Alice", "Bob", "Charlie", "Diana", "Eve", 
+                   "Frank", "Grace", "Henry", "Iris", "Jack",
+                   "Alice", "Bob", "Charlie", "Diana", "Eve"),
+  department = c("Sales", "Sales", "Marketing", "Sales", "Marketing",
+                "IT", "Sales", "Marketing", "IT", "Sales",
+                "Sales", "Sales", "Marketing", "Sales", "Marketing"),
+  region = c("North", "South", "North", "East", "West",
+            "North", "South", "East", "West", "North",
+            "North", "South", "North", "East", "West"),
+  sales_amount = c(15000, 22000, 18000, 25000, 12000,
+                  8000, 30000, 16000, 9000, 21000,
+                  17000, 24000, 19000, 27000, 13000),
+  sales_date = as.Date(c("2024-01-15", "2024-01-20", "2024-02-10", "2024-02-15", "2024-03-05",
+                        "2024-03-10", "2024-03-20", "2024-04-05", "2024-04-10", "2024-04-15",
+                        "2024-05-01", "2024-05-05", "2024-05-10", "2024-05-15", "2024-05-20")),
+  commission_rate = c(0.05, 0.06, 0.04, 0.07, 0.03,
+                     0.02, 0.08, 0.04, 0.02, 0.06,
+                     0.05, 0.06, 0.04, 0.07, 0.03)
+)
+
+# Display the first few rows to understand our data structure
+head(sales_data)
+```
+
+## 1. filter() - Select Rows Based on Conditions
+
+The `filter()` function is like a bouncer at a club - it only lets through the rows that meet your specific criteria. This is incredibly useful when you want to focus on a subset of your data that meets certain conditions.
+
+```{r filter-examples}
+# Basic filtering: Show only sales from the North region
+# This helps us focus on regional performance analysis
+north_sales <- sales_data %>%
+  filter(region == "North")
+
+cat("Sales from North region:\n")
+print(north_sales)
+
+# Multiple conditions: High-value sales (>20000) in Sales department
+# This identifies top performers in our sales team
+high_value_sales <- sales_data %>%
+  filter(sales_amount > 20000 & department == "Sales")
+
+cat("\nHigh-value sales in Sales department:\n")
+print(high_value_sales)
+
+# Using %in% operator: Sales from specific regions
+# This is efficient when checking multiple values
+selected_regions <- sales_data %>%
+  filter(region %in% c("North", "East"))
+
+cat("\nSales from North and East regions:\n")
+print(selected_regions)
+
+# Date filtering: Sales after March 2024
+# Useful for analyzing recent performance trends
+recent_sales <- sales_data %>%
+  filter(sales_date > as.Date("2024-03-01"))
+
+cat("\nSales after March 2024:\n")
+print(recent_sales)
+```
+
+## 2. select() - Choose Columns by Name or Pattern
+
+Think of `select()` as choosing which columns to display on your screen. Just like you might choose specific columns in a spreadsheet, this function helps you focus on the variables that matter for your current analysis.
+
+```{r select-examples}
+# Select specific columns by name
+# This creates a focused view for basic employee information
+basic_info <- sales_data %>%
+  select(employee_name, department, sales_amount)
+
+cat("Basic employee information:\n")
+print(head(basic_info))
+
+# Select columns by range
+# Useful when you want consecutive columns
+column_range <- sales_data %>%
+  select(employee_id:department)
+
+cat("\nColumns from employee_id to department:\n")
+print(head(column_range))
+
+# Select columns by pattern
+# This is powerful for datasets with many similarly named columns
+sales_columns <- sales_data %>%
+  select(contains("sales"))
+
+cat("\nColumns containing 'sales':\n")
+print(head(sales_columns))
+
+# Exclude specific columns using negative selection
+# This keeps everything except what you don't need
+without_id <- sales_data %>%
+  select(-employee_id, -sales_date)
+
+cat("\nData without ID and date columns:\n")
+print(head(without_id))
+
+# Advanced selection: starts_with, ends_with
+# These are helpful for structured column names
+employee_columns <- sales_data %>%
+  select(starts_with("employee"))
+
+cat("\nColumns starting with 'employee':\n")
+print(head(employee_columns))
+```
+
+## 3. mutate() - Add or Change Columns
+
+The `mutate()` function is like a calculator that can create new columns or modify existing ones. It's essential for creating derived variables or transforming your data.
+
+```{r mutate-examples}
+# Add a new column with calculations
+# This creates a commission column based on sales amount and rate
+sales_with_commission <- sales_data %>%
+  mutate(commission = sales_amount * commission_rate)
+
+cat("Data with calculated commission:\n")
+print(head(sales_with_commission))
+
+# Multiple new columns in one mutate call
+# This is efficient and keeps related calculations together
+sales_enhanced <- sales_data %>%
+  mutate(
+    commission = sales_amount * commission_rate,
+    net_sales = sales_amount - commission,
+    sales_category = case_when(
+      sales_amount < 15000 ~ "Low",
+      sales_amount < 25000 ~ "Medium",
+      TRUE ~ "High"
+    )
+  )
+
+cat("\nData with multiple new columns:\n")
+print(head(sales_enhanced))
+
+# Modify existing columns
+# This transforms data in place, useful for data cleaning
+sales_modified <- sales_data %>%
+  mutate(
+    sales_amount = sales_amount / 1000,  # Convert to thousands
+    employee_name = toupper(employee_name)  # Convert names to uppercase
+  )
+
+cat("\nData with modified columns:\n")
+print(head(sales_modified))
+
+# Using mutate with conditional logic
+# This creates categories based on complex conditions
+sales_categorized <- sales_data %>%
+  mutate(
+    performance_tier = case_when(
+      sales_amount > 25000 ~ "Excellent",
+      sales_amount > 20000 ~ "Good",
+      sales_amount > 15000 ~ "Average",
+      TRUE ~ "Needs Improvement"
+    )
+  )
+
+cat("\nData with performance tiers:\n")
+print(head(sales_categorized))
+```
+
+## 4. summarise() - Collapse Rows to Summary Statistics
+
+The `summarise()` function is like taking a step back to see the big picture. It collapses many rows into summary statistics, helping you understand patterns and trends in your data.
+
+```{r summarise-examples}
+# Basic summary statistics
+# This gives us an overview of our sales performance
+sales_summary <- sales_data %>%
+  summarise(
+    total_sales = sum(sales_amount),
+    average_sales = mean(sales_amount),
+    median_sales = median(sales_amount),
+    min_sales = min(sales_amount),
+    max_sales = max(sales_amount),
+    count_records = n()
+  )
+
+cat("Overall sales summary:\n")
+print(sales_summary)
+
+# Calculate multiple percentiles
+# This helps understand the distribution of sales amounts
+sales_percentiles <- sales_data %>%
+  summarise(
+    q25 = quantile(sales_amount, 0.25),
+    q50 = quantile(sales_amount, 0.50),
+    q75 = quantile(sales_amount, 0.75),
+    iqr = IQR(sales_amount)
+  )
+
+cat("\nSales percentiles:\n")
+print(sales_percentiles)
+
+# Summary with additional calculations
+# This provides business-relevant metrics
+business_metrics <- sales_data %>%
+  summarise(
+    total_revenue = sum(sales_amount),
+    total_commission = sum(sales_amount * commission_rate),
+    net_revenue = sum(sales_amount - (sales_amount * commission_rate)),
+    average_commission_rate = mean(commission_rate),
+    number_of_transactions = n(),
+    unique_employees = n_distinct(employee_id)
+  )
+
+cat("\nBusiness metrics summary:\n")
+print(business_metrics)
+```
+
+## 5. group_by() - Group Data for Grouped Operations
+
+The `group_by()` function is like organizing your data into separate piles before performing calculations. It's incredibly powerful when combined with `summarise()` because it allows you to calculate statistics for each group separately.
+
+```{r group-by-examples}
+# Group by department and calculate summary statistics
+# This helps us compare performance across different departments
+dept_summary <- sales_data %>%
+  group_by(department) %>%
+  summarise(
+    total_sales = sum(sales_amount),
+    average_sales = mean(sales_amount),
+    employee_count = n_distinct(employee_id),
+    transaction_count = n(),
+    .groups = 'drop'  # This ungrouped the result
+  )
+
+cat("Summary by department:\n")
+print(dept_summary)
+
+# Group by multiple variables
+# This provides a more detailed breakdown
+region_dept_summary <- sales_data %>%
+  group_by(region, department) %>%
+  summarise(
+    total_sales = sum(sales_amount),
+    avg_sales = mean(sales_amount),
+    transactions = n(),
+    .groups = 'drop'
+  )
+
+cat("\nSummary by region and department:\n")
+print(region_dept_summary)
+
+# Using group_by with mutate to create group-specific calculations
+# This adds group statistics to each row while keeping all data
+sales_with_group_stats <- sales_data %>%
+  group_by(department) %>%
+  mutate(
+    dept_avg_sales = mean(sales_amount),
+    dept_total_sales = sum(sales_amount),
+    sales_vs_dept_avg = sales_amount - dept_avg_sales
+  ) %>%
+  ungroup()  # Always ungroup when done to avoid unexpected behavior
+
+cat("\nData with department-level statistics:\n")
+print(head(sales_with_group_stats))
+```
+
+## 6. arrange() - Sort Rows by Column Values
+
+The `arrange()` function organizes your data in a specific order, much like sorting files in a filing cabinet. This is essential for identifying top performers, trends, or outliers.
+
+```{r arrange-examples}
+# Sort by sales amount in ascending order
+# This helps identify the lowest performing sales
+sales_ascending <- sales_data %>%
+  arrange(sales_amount)
+
+cat("Sales data sorted by amount (ascending):\n")
+print(head(sales_ascending))
+
+# Sort by sales amount in descending order
+# This identifies top performers
+sales_descending <- sales_data %>%
+  arrange(desc(sales_amount))
+
+cat("\nTop sales performers:\n")
+print(head(sales_descending))
+
+# Sort by multiple columns
+# This creates a hierarchical sorting system
+sales_multi_sort <- sales_data %>%
+  arrange(department, desc(sales_amount))
+
+cat("\nSales sorted by department, then by amount (descending):\n")
+print(head(sales_multi_sort, 10))
+
+# Sort by date to see chronological order
+# This helps identify trends over time
+sales_chronological <- sales_data %>%
+  arrange(sales_date)
+
+cat("\nSales in chronological order:\n")
+print(head(sales_chronological))
+```
+
+## 7. rename() - Rename Columns
+
+The `rename()` function is like putting new labels on your file folders. It helps make your column names more descriptive or consistent with naming conventions.
+
+```{r rename-examples}
+# Rename columns for better clarity
+# This makes the dataset more self-explanatory
+sales_renamed <- sales_data %>%
+  rename(
+    emp_id = employee_id,
+    emp_name = employee_name,
+    dept = department,
+    sales_revenue = sales_amount,
+    commission_pct = commission_rate
+  )
+
+cat("Data with renamed columns:\n")
+print(head(sales_renamed))
+
+# Rename multiple columns systematically
+# This ensures consistent naming patterns
+sales_consistent_names <- sales_data %>%
+  rename(
+    EmployeeID = employee_id,
+    EmployeeName = employee_name,
+    Department = department,
+    Region = region,
+    SalesAmount = sales_amount,
+    SalesDate = sales_date,
+    CommissionRate = commission_rate
+  )
+
+cat("\nData with consistent naming convention:\n")
+print(head(sales_consistent_names))
+
+# Using rename with select for column reordering and renaming
+# This combines column selection with renaming
+focused_data <- sales_data %>%
+  select(
+    Name = employee_name,
+    Dept = department,
+    Revenue = sales_amount,
+    Commission = commission_rate
+  )
+
+cat("\nFocused data with renamed columns:\n")
+print(head(focused_data))
+```
+
+## 8. distinct() - Remove Duplicate Rows
+
+The `distinct()` function is like a duplicate detector that keeps only unique records. This is crucial for data cleaning and ensuring accurate analysis.
+
+```{r distinct-examples}
+# Get unique employees
+# This helps us understand how many unique individuals we have
+unique_employees <- sales_data %>%
+  distinct(employee_id, employee_name)
+
+cat("Unique employees:\n")
+print(unique_employees)
+
+# Get unique department-region combinations
+# This shows us all the department-region pairs in our data
+unique_combinations <- sales_data %>%
+  distinct(department, region)
+
+cat("\nUnique department-region combinations:\n")
+print(unique_combinations)
+
+# Remove complete duplicate rows
+# This ensures each transaction is counted only once
+unique_records <- sales_data %>%
+  distinct()
+
+cat("\nNumber of unique records:", nrow(unique_records), "\n")
+cat("Original number of records:", nrow(sales_data), "\n")
+
+# Keep first occurrence of duplicates based on specific columns
+# This is useful when you want to keep the first occurrence of each employee
+first_occurrence <- sales_data %>%
+  distinct(employee_id, .keep_all = TRUE)
+
+cat("\nFirst occurrence of each employee:\n")
+print(first_occurrence)
+```
+
+## 9. count() - Count Occurrences of Values
+
+The `count()` function is like a tally counter that helps you understand the frequency of different values in your data. It's essential for exploratory data analysis.
+
+```{r count-examples}
+# Count occurrences of each department
+# This shows the distribution of records across departments
+dept_counts <- sales_data %>%
+  count(department)
+
+cat("Count by department:\n")
+print(dept_counts)
+
+# Count with sorting
+# This shows the most common values first
+dept_counts_sorted <- sales_data %>%
+  count(department, sort = TRUE)
+
+cat("\nDepartment counts (sorted):\n")
+print(dept_counts_sorted)
+
+# Count by multiple variables
+# This provides a cross-tabulation of department and region
+cross_count <- sales_data %>%
+  count(department, region, sort = TRUE)
+
+cat("\nCross-tabulation of department and region:\n")
+print(cross_count)
+
+# Count with additional calculations
+# This adds percentages to understand proportions
+dept_proportions <- sales_data %>%
+  count(department) %>%
+  mutate(
+    percentage = round(n / sum(n) * 100, 1),
+    proportion = n / sum(n)
+  )
+
+cat("\nDepartment counts with percentages:\n")
+print(dept_proportions)
+
+# Count unique values in a column
+# This is equivalent to n_distinct()
+unique_count <- sales_data %>%
+  summarise(
+    unique_employees = n_distinct(employee_id),
+    unique_departments = n_distinct(department),
+    unique_regions = n_distinct(region)
+  )
+
+cat("\nCount of unique values:\n")
+print(unique_count)
+```
+
+## 10. across() - Apply Functions Across Multiple Columns
+
+The `across()` function is like having a magic wand that can apply the same operation to multiple columns at once. This is incredibly efficient for data cleaning and transformation tasks.
+
+```{r across-examples}
+# Apply summary functions across multiple numeric columns
+# This gives us summary statistics for all numeric variables
+numeric_summary <- sales_data %>%
+  summarise(across(where(is.numeric), list(
+    mean = mean,
+    median = median,
+    sd = sd,
+    min = min,
+    max = max
+  ), .names = "{.col}_{.fn}"))
+
+cat("Summary statistics across numeric columns:\n")
+print(as.data.frame(numeric_summary))
+
+# Apply transformations to specific columns
+# This standardizes multiple columns at once
+sales_standardized <- sales_data %>%
+  mutate(across(c(sales_amount, commission_rate), scale))
+
+cat("\nFirst few rows of standardized data:\n")
+print(head(sales_standardized))
+
+# Apply functions to columns matching a pattern
+# This is useful for datasets with many similarly named columns
+sales_rounded <- sales_data %>%
+  mutate(across(contains("sales"), round, digits = 0))
+
+cat("\nData with rounded sales values:\n")
+print(head(sales_rounded))
+
+# Apply different functions to different column groups
+# This shows the flexibility of across()
+sales_transformed <- sales_data %>%
+  mutate(
+    across(where(is.character), toupper),  # Convert text to uppercase
+    across(where(is.numeric), round, digits = 2)  # Round numeric values
+  )
+
+cat("\nData with multiple transformations:\n")
+print(head(sales_transformed))
+
+# Using across() with group_by() for grouped operations
+# This calculates statistics for each group across multiple columns
+grouped_summary <- sales_data %>%
+  group_by(department) %>%
+  summarise(across(c(sales_amount, commission_rate), 
+                  list(mean = mean, sd = sd), 
+                  .names = "{.col}_{.fn}"),
+           .groups = 'drop')
+
+cat("\nGrouped summary across multiple columns:\n")
+print(grouped_summary)
+```
+
+## 11. case_when() - Vectorised if...else if...else
+
+The `case_when()` function is like a sophisticated decision tree that can handle multiple conditions elegantly. It's much cleaner than nested if-else statements and is perfect for creating categorical variables.
+
+```{r case-when-examples}
+# Create performance categories based on sales amount
+# This helps classify employees into performance tiers
+sales_performance <- sales_data %>%
+  mutate(
+    performance_level = case_when(
+      sales_amount >= 25000 ~ "Outstanding",
+      sales_amount >= 20000 ~ "Excellent",
+      sales_amount >= 15000 ~ "Good",
+      sales_amount >= 10000 ~ "Average",
+      TRUE ~ "Needs Improvement"  # TRUE serves as the 'else' condition
+    )
+  )
+
+cat("Sales data with performance levels:\n")
+print(head(sales_performance))
+
+# Complex conditions with multiple variables
+# This creates sophisticated business rules
+sales_categorized <- sales_data %>%
+  mutate(
+    sales_tier = case_when(
+      department == "Sales" & sales_amount > 20000 ~ "Top Sales Performer",
+      department == "Marketing" & sales_amount > 15000 ~ "Top Marketing Performer",
+      department == "IT" & sales_amount > 8000 ~ "Top IT Performer",
+      sales_amount > 18000 ~ "High Performer",
+      sales_amount > 12000 ~ "Average Performer",
+      TRUE ~ "Low Performer"
+    )
+  )
+
+cat("\nSales data with complex categorization:\n")
+print(head(sales_categorized, 10))
+
+# Using case_when with date conditions
+# This creates time-based categories
+sales_quarterly <- sales_data %>%
+  mutate(
+    quarter = case_when(
+      sales_date >= as.Date("2024-01-01") & sales_date < as.Date("2024-04-01") ~ "Q1",
+      sales_date >= as.Date("2024-04-01") & sales_date < as.Date("2024-07-01") ~ "Q2",
+      sales_date >= as.Date("2024-07-01") & sales_date < as.Date("2024-10-01") ~ "Q3",
+      TRUE ~ "Q4"
+    )
+  )
+
+cat("\nSales data with quarterly classification:\n")
+print(head(sales_quarterly))
+
+# Using case_when for data cleaning
+# This handles missing or problematic values
+sales_cleaned <- sales_data %>%
+  mutate(
+    region_clean = case_when(
+      is.na(region) ~ "Unknown",
+      region == "" ~ "Unknown",
+      region %in% c("North", "South", "East", "West") ~ region,
+      TRUE ~ "Other"
+    ),
+    commission_category = case_when(
+      commission_rate < 0.03 ~ "Low Commission",
+      commission_rate < 0.06 ~ "Standard Commission",
+      commission_rate >= 0.06 ~ "High Commission",
+      is.na(commission_rate) ~ "No Commission Data",
+      TRUE ~ "Other"
+    )
+  )
+
+cat("\nCleaned data with case_when:\n")
+print(head(sales_cleaned))
+```
+
+## Combining dplyr Functions: The Power of the Pipe
+
+The real magic of dplyr comes from combining these functions using the pipe operator (`%>%`). This allows you to create powerful data analysis pipelines that are both readable and efficient.
+
+```{r combined-examples}
+# Complex analysis combining multiple dplyr functions
+# This creates a comprehensive sales analysis pipeline
+sales_analysis <- sales_data %>%
+  # Step 1: Add calculated columns
+  mutate(
+    commission = sales_amount * commission_rate,
+    net_sales = sales_amount - commission,
+    performance_tier = case_when(
+      sales_amount > 25000 ~ "Top",
+      sales_amount > 20000 ~ "High",
+      sales_amount > 15000 ~ "Medium",
+      TRUE ~ "Low"
+    )
+  ) %>%
+  # Step 2: Filter for relevant data
+  filter(sales_amount > 10000) %>%
+  # Step 3: Group by relevant categories
+  group_by(department, performance_tier) %>%
+  # Step 4: Calculate summary statistics
+  summarise(
+    total_sales = sum(sales_amount),
+    avg_sales = mean(sales_amount),
+    total_commission = sum(commission),
+    employee_count = n_distinct(employee_id),
+    transaction_count = n(),
+    .groups = 'drop'
+  ) %>%
+  # Step 5: Sort results
+  arrange(department, desc(total_sales)) %>%
+  # Step 6: Add percentage calculations
+  mutate(
+    pct_of_total = round(total_sales / sum(total_sales) * 100, 2)
+  )
+
+cat("Comprehensive sales analysis:\n")
+print(sales_analysis)
+
+# Top performing employees analysis
+# This identifies and ranks top performers with detailed metrics
+top_performers <- sales_data %>%
+  # Add commission calculations
+  mutate(commission = sales_amount * commission_rate) %>%
+  # Group by employee to get their totals
+  group_by(employee_id, employee_name, department) %>%
+  summarise(
+    total_sales = sum(sales_amount),
+    total_commission = sum(commission),
+    avg_sale = mean(sales_amount),
+    transaction_count = n(),
+    .groups = 'drop'
+  ) %>%
+  # Filter for employees with significant sales
+  filter(total_sales > 20000) %>%
+  # Rank employees
+  arrange(desc(total_sales)) %>%
+  # Add rankings
+  mutate(
+    sales_rank = row_number(),
+    performance_category = case_when(
+      sales_rank <= 3 ~ "Top 3",
+      sales_rank <= 5 ~ "Top 5",
+      TRUE ~ "Other Top Performers"
+    )
+  ) %>%
+  # Select and rename columns for final report
+  select(
+    Rank = sales_rank,
+    Name = employee_name,
+    Department = department,
+    `Total Sales` = total_sales,
+    `Avg Sale` = avg_sale,
+    `Total Commission` = total_commission,
+    Transactions = transaction_count,
+    Category = performance_category
+  )
+
+cat("\nTop performers analysis:\n")
+print(top_performers)
+```
+
+## Conclusion
+
+The dplyr functions work together like a well-orchestrated team, each serving a specific purpose in the data manipulation process. Understanding when and how to use each function is key to becoming proficient in R data analysis. The beauty of dplyr lies not just in individual functions, but in how they can be combined using the pipe operator to create powerful, readable data analysis workflows.
+
+Remember that practice makes perfect. Try applying these functions to your own datasets, and don't be afraid to experiment with different combinations. The more you use dplyr, the more intuitive these operations will become, and you'll find yourself thinking in terms of data transformation pipelines rather than individual operations.
+
+Each function serves as a building block in your data analysis toolkit. Just as a carpenter uses different tools for different purposes, you'll use different dplyr functions depending on what you need to accomplish with your data. The key is understanding what each tool does and when to use it effectively.
