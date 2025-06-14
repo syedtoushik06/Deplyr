@@ -2,11 +2,14 @@
 title: "Complete Guide to dplyr Functions"
 author: "Syed Toushik Hossain"
 date: "`r Sys.Date()`"
-output: 
+output:
+  pdf_document:
+    toc: true
+    toc_depth: '3'
   html_document:
     toc: true
     toc_depth: 3
-    toc_float: 
+    toc_float:
       collapsed: false
       smooth_scroll: true
     number_sections: true
